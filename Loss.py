@@ -35,15 +35,3 @@ class CategoricalCrossEntropyLoss(LossFunction):
         self.output = -y / yhat
         self.output = self.output / sample
         return self.output
-    
-if __name__ == "__main__":
-    softmaxOutput = np.array([[0.7, 0.1, 0.2],
-                          [0.8, 0.15, 0.05],
-                          [0.5, 0.27, 0.23]])
-
-    groundTruth = np.array([[1, 0, 0],
-                            [0, 1, 0],
-                            [0, 0, 1]])
-    loss = CategoricalCrossEntropyLoss()
-    loss.calculate(softmaxOutput, groundTruth)
-    print(loss.loss())
