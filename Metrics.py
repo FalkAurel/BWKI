@@ -4,4 +4,6 @@ class Metrics(object):
     
     @staticmethod
     def accuracy(yhat, y):
-        return f"{np.mean(yhat.argmax(axis = 1) == y.argmax(axis = 1))}%"
+        if y.ndim == 2:
+            y = y.argmax(axis = 1)
+        return np.mean(yhat.argmax(axis = 1) == y)
