@@ -1,3 +1,3 @@
 # BWKI
-Dieses Repository ist das gemeinsame Produkt von FalkAurel [...] für den BWKI. 
-Für Teammitglieder bitte tut ActivationFunction.py, Dense.py, Loss.py, Metrics.py, Optimizer.py, __init__.py in einen Ordner namens "framework"
+Dieses Repository soll als ein Framework für die Pogrammierung von künstlicher Intelligenz dienen
+
