@@ -57,15 +57,7 @@ class DropOutLayer(object):
 class FlattenLayer(object):
     def forward(self, inputs):
         self._inputShape = inputs.shape
-        return inputs.reshape(self._inputShape[0], -1)
+        return inputs.reshape(-1)
     
     def backward(self, inputs):
         return inputs.reshape(self._inputShape)
-
-if __name__ == "__main__":
-    testMatrix = np.array([[[1, 6, 2],
-                           [5, 3, 1],
-                           [7, 0, 4]]])
-    f = FlattenLayer()
-    out = f.forward(testMatrix)
-    ur = f.backward(out)
