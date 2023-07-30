@@ -20,4 +20,5 @@ Wie in dem Bild deutlich wird, wurde jede mathematische Komplexität von dem Ben
 
 
 Credits: cs231n
-LICENCES: https://github.com/cs231n/cs231n.github.io/blob/master/LICENSE
+## LICENCES
+https://github.com/cs231n/cs231n.github.io/blob/master/LICENSE
