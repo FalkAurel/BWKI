@@ -8,13 +8,24 @@ class MeanPooling():
         self.meanPoolingSize = meanPooling
     
     def forward(self, image):
-        self._input = image
-        _, y, x = image.shape
-        image = image[:y - y % self.meanPoolingSize, :x - x % self.meanPoolingSize] 
-        return image.reshape(-1, y // self.meanPoolingSize, self.meanPoolingSize, x // self.meanPoolingSize, self.meanPoolingSize).mean(axis = (2, 4))
+        """
+        We store the image's shape in self._input to use it in the backwardPass. We split the image into subArrays
+        and take the mean along axes 2 and 4.
+        """
+        self._input = image.shape
+        b, y, x = image.shape
+        image = image[:, :y - y % self.meanPoolingSize, :x - x % self.meanPoolingSize] 
+        return image.reshape(b, y // self.meanPoolingSize, self.meanPoolingSize, x // self.meanPoolingSize, self.meanPoolingSize).mean(axis = (2, 4))
     
     def backward(self, gradient):
-        dInput = np.zeros_like(self._input).astype(np.float64)
+        """
+        We create an Array of shape self._input. Now we take the partial derivative of the meanPoolingOperation.
+        If u = 1 / m * ∑_(i=1)^m = xi then is du/dx = 1/m. So we can say we take for every value in the gradient only the
+        mth part which would look like this gradient/m. We have to iterate over the gradient and apply this gradient to a
+        matrix that is of size m**2 and multiply this matrix by gradientElement over m before integrating it into the
+        dInput array.
+        """
+        dInput = np.zeros(self._input)
         nenner = self.meanPoolingSize**2
         dAverage = np.ones((self.meanPoolingSize, self.meanPoolingSize)) * 1/nenner
         batch, h, w = gradient.shape
