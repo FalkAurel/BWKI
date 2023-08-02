@@ -103,7 +103,3 @@ class BatchNormalizationLayer():
         self.dweight = np.sum(gradient * self.normalizedInputs, axis=0)
         self.dbias = np.sum(gradient, axis=0)
         return dInput
-        return inputs.reshape(-1)
-    
-    def backward(self, inputs):
-        return inputs.reshape(self._inputShape)
