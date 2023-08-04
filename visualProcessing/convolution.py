@@ -1,18 +1,21 @@
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 import scipy.signal
+from time import perf_counter
 
 #Quelle: https://pavisj.medium.com/convolutions-and-backpropagations-46026a8f5d2c
 
 class Convolution():
-    def __init__(self, inputGröße:tuple ,*,kernelGröße = 2):
+    def __init__(self, inputGröße:tuple ,*,kernelGröße = 2, batchSize = 64):
         """
-        Initilize Class
+        #Initilize Class
         """
         self.kernelGröße = kernelGröße
         self.weight = np.random.randn(inputGröße[0], kernelGröße, kernelGröße) / kernelGröße**2
         self.outputShape = (inputGröße[0], inputGröße[1] - kernelGröße + 1, inputGröße[2] - kernelGröße + 1)
         self.bias = np.random.randn(*self.outputShape)
+        self.batchSize = batchSize
+        self.l1WFaktor = self.l1BFaktor = self.l2WFaktor = self.l2BFaktor = 0
     
     def forward(self, image):
         """
@@ -29,7 +32,8 @@ class Convolution():
         """
         Es wird eine Kopie vom Bild erzeugt, damit man es später in dem BackwardPass benutzen kann, um die dweights zu err
         echnen und es als Vorlage für den dInput zu nutzen.
-        Forwardpass valide Kreuzkorrelation am Bild. Es wird eine featureMap erstellt. 
+        Forwardpass valide Kreuzkorrelation am Bild. Es wird eine featureMap erstellt.
+        Diese Implementation schafft kleinere windows, sodass diese nicht so Speicherintensiv sind. 
         """
         self.input = image
         featureMap = np.zeros(self.outputShape)
@@ -48,27 +52,31 @@ class Convolution():
         nach Kettenregel(1 * gradient).
         """
         dInput = np.copy(self.input).astype(np.float64)
-        self.dbias = gradient
+        self.dbias = gradient.sum(axis = 0, keepdims = True) / self.batchSize
         self.dweight = np.zeros(self.weight.shape)
         for batch in range(len(gradient)):
             subArrays = sliding_window_view(self.input[batch], window_shape=(gradient[batch].shape))
-            self.dweight[batch] = np.sum(subArrays * gradient, axis = (2, 3))
-            dInput[batch] = scipy.signal.convolve2d(np.flip(self.weight[batch]), gradient[batch], mode="full")
+            self.dweight[batch] = np.sum(subArrays * gradient[batch], axis = (2, 3))#davor wars gradient jetzt gradient[shape]
+            dInput[batch] = scipy.signal.convolve2d(gradient[batch], self.weight[batch], mode="full")
+        self.dweight /= self.batchSize
         return dInput
 
 if __name__ == "__main__":
-    conv = Convolution((1, 300, 300))
-    test = np.random.randn(1, 300, 300)
-    """test = np.array([[[1, 6, 2],
+    conv = Convolution((2, 8, 8))
+    test = np.random.randn(2, 8, 8)
+    test = np.array([[[1, 6, 2],
+                      [5, 3, 1],
+                      [7, 0, 4]],
+                     [[1, 6, 2],
                       [5, 3, 1],
                       [7, 0, 4]]])
     
     conv.weight = np.array([[[1, 2],
-                             [-1, 0]]])"""
-    from time import perf_counter
+                             [-1, 0]],
+                            [[1, 2],
+                             [-1, 0]]])
     start = perf_counter()
+    out1 = conv.forwardOptim(test)
     out = conv.forwardOptim(test)
     gradient = np.random.randn(*out.shape)
     dInput = conv.backward(gradient)
-    ende = perf_counter()
-    print(ende - start)
