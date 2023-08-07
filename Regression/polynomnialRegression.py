@@ -47,21 +47,3 @@ class PolynomnialRegression():
     
     def __repr__(self):
         return f"PolynomnialRegression of function of order {self.order}"
-    
-if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-    np.random.seed(0)
-    Xtest = np.random.uniform(-1, 1, size=100)
-    coefficients = [1, 2, 2.53, 4.3, 13.1]
-    ytest = np.sum([coefficients[i] * Xtest**i for i in range(len(coefficients))], axis=0)
-    ytest += np.random.normal(scale=0.1, size=ytest.shape)
-    pg = PolynomnialRegression(4)
-    yhat = pg.fit(Xtest, ytest).evaluate(Xtest, ytest, visualize=True)
-    plt.scatter(Xtest, ytest)
-    plt.scatter(Xtest, yhat)
-    plt.xlabel("X")
-    plt.ylabel("y")
-    plt.show()
-
-
-
