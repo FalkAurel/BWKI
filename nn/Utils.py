@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 
 def sparseToOneHotEncoded(y, nlabel):
     """
-    Gibt einen One-Hot-Encoded-Vector zurück. Wenn die Labels in einem Format wie diesem Vorliegen:
-    [1, 2, 0] sind sie für diese Libary nicht zu gebrauchen.
+    Returns a one-hot encoded vector for every sample. You should use it to turn this format [0, 2, 1]
+    into this [1, 0, 0], [0, 0, 1], [0, 1, 0].
     """
     ausgabe = []
     for i in y:
@@ -15,9 +15,8 @@ def sparseToOneHotEncoded(y, nlabel):
 
 def visualize(accuracy, loss, learningRate, optim):
     """
-    Gibt eine Visualisierung des neuronalen Netzes aus.
-    Nimmt die Genauigkeit, den Loss, die LernRate und den Optimizer als args. Die ersten 3 müssen als
-    Liste übergeben werden.
+    Takes the accuracy, the loss, the learning rate and the optimizer as parameters. Returns a visualization
+    of the training process.
     """
     x = [i for i in range(len(accuracy))]
     plt.style.use("seaborn")
@@ -47,19 +46,35 @@ def trainTestSplit(inputX, inputY, verteilung=0.8):
     trainY, testY = inputY[:index], inputY[index:]
     return trainX, trainY, testX, testY
 
-def preProcessing(data):
-    norm = (data.max() - data.min()) / 2
-    return (data - norm) / norm
+def preProcessing(data,* , method = "minMaxNormalization", newMax = 1, newMin = -1):
+    """
+    preProcessing gives you access to normalization and standartization techniques. It is set by default to
+    minMaxNormalization with max = 1 and min = -1.
+    """
+    if method == "meanNormalization":
+        return _meanNormalization(data)
+    if method == "minMaxNormalization":
+        return _minMaxNormalization(data, newMax, newMin)
+
+def _minMaxNormalization(data, newMax, newMin):
+    return (data - data.min()) / (data.max() - data.min()) * (newMax - newMin) + newMin
+
+def _meanNormalization(data):
+    mean = data.mean(axis=0)
+    std = np.sqrt(np.square(data - mean).sum(axis=0) / (len(data) - 1))
+    return (data - mean) / std
 
 def shuffle(X, y):
+    """
+    Shuffles the dataset.
+    """
     keys = np.array(range(X.shape[0]))
     np.random.shuffle(keys)
     return X[keys], y[keys]
 
 def predictBinary(x, decisionBoundary=0.5):
     """
-    Nimmt den Output des Netzes.
-    Gibt einen Array von der shape x.shape mit entweder 0 oder 1 zurück.
-    Sollte als decision-boundary für binary Classifier genutzt werden.
+    This function is supposed to be used with the output of a binary classifier. It uses this decisionBoundary
+    to determine whether the output should be returned as a 0 or a 1.
     """
     return np.where(x >= decisionBoundary, 1, 0)
