@@ -22,6 +22,15 @@ class ReLU(ActivationFunction):
         dInputs[self._input <= 0] = 0
         return dInputs
     
+class tanh(ActivationFunction):
+    
+    def forward(self, inputs):
+        self._input = np.tanh(inputs)
+        return self._inputs
+    
+    def backward(self, gradient):
+        return (1 - self._input**2) * gradient
+    
 class Softmax(ActivationFunction):
     #Quelle: https://www.pinecone.io/learn/softmax-activation/
     """
