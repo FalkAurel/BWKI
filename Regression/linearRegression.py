@@ -72,7 +72,6 @@ class MultipleLinearRegression():
     def getCoefficients(self):
         return self.coefficients
     
-    
     def visualizeCoefficients(self):
         """
         Each bar describes the coefficient. The X-axis shows us which coefficients it is and the y-Axis shows the value
