@@ -22,16 +22,17 @@ class PolynomnialRegression():
         """
         Evaluating the model. Returns by default a value between 0 and 1, which indicates how well the model has
         estimated the coefficient. The tolerance parameter is set to 0.05 by default(5%) which determines how
-        harsh the evaluation is carried out. When setting visualize to true, the function will return all pre-
-        dicted values.
+        harsh the evaluation is carried out. Furthermore it'll also return the RMSE (the lower, the better the fit).
+        When setting visualize to true, the function will return all predicted values.
         """
         X = X.reshape(-1, 1)
         inputMatrix = np.hstack([X**order for order in range(self.order + 1)])
         yhat = inputMatrix @ self.coefficients
         if visualize:
             return yhat
-        return np.mean(np.where(np.logical_or(yhat*(1 + tolerance) >= y, yhat*(1 - tolerance) <= y), 1, 0))
+        return np.mean(np.where(np.logical_or(yhat*(1 + tolerance) >= y, yhat*(1 - tolerance) <= y), 1, 0)), np.sqrt(np.mean(y - yhat)**2)
     
+    @property
     def getCoefficients(self):
         return self.coefficients
     
