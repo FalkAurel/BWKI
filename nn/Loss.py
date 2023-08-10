@@ -1,8 +1,7 @@
 import numpy as np
 from abc import ABC, abstractmethod
 
-class LossFunction(object):
-    
+class LossFunction(object):   
     def tranierbareLayer(self, layers):
         self.regularizationLayer = layers
     
@@ -30,7 +29,6 @@ class LossFunction(object):
         return regularizationLoss
     
 class CategoricalCrossEntropyLoss(LossFunction):
-    
     def calculate(self, yhat, y):
         if yhat.shape[0] == 1 and y.shape[0] == 1:
             yhat, y = yhat.reshape(-1), y.reshape(-1)
@@ -40,9 +38,6 @@ class CategoricalCrossEntropyLoss(LossFunction):
         return -y/ (yhat * len(yhat))
 
 class BinaryCrossEntropyLoss(LossFunction):
-    """
-    Implementation von BinaryCrossEntropyLoss. Anzuwenden bei Binary-Classification.
-    """
     def calculate(self, yhat, y):
         yhat = np.clip(yhat, 1e-7, 1-1e-7)
         return -np.mean(y * np.log(yhat) + (1 - y) * np.log(1 - yhat))
@@ -52,9 +47,6 @@ class BinaryCrossEntropyLoss(LossFunction):
         return -(y / yhat - (1 - y) / (1 - yhat)) / (len(yhat[0]) * len(yhat))
     
 class MeanSquaredError(LossFunction):
-    """
-    Implementation von Mean squared Error(MSE). Für Regressionsprobleme anzuwenden.
-    """
     def calculate(self, yhat, y):
         """
         f(yhat, y) = 1/nInputs * ∑(y - yhat)^2
@@ -63,14 +55,11 @@ class MeanSquaredError(LossFunction):
     
     def backward(self, yhat, y):
         """
-        Ableitung von f(yhat, y) nach yhat: 2(y - yhat) / nInput
+        2(y - yhat) / nInput
         """
         return -2 * (y - yhat)/ (len(yhat) * len(yhat[0]))
 
 class MeanAbsoluteError(LossFunction):
-    """
-    Implementation von Mean absolute Error(MAE). Für Regressionsprobleme anzuwenden.
-    """
     def calculate(self, yhat, y):
         """
         f(yhat, y) = 1/nInput * ∑|y - yhat|
@@ -79,6 +68,23 @@ class MeanAbsoluteError(LossFunction):
     
     def backward(self, yhat, y):
         """
-        Ableitung von f(yhat, y) nach yhat: 1/nInput * {1 für y - yhat > 0; 0 für y - yhat < 0}
+        1/nInput * {1 für y - yhat > 0; 0 für y - yhat < 0}
         """
         return np.sign(y - yhat) / (len(yhat) * len(yhat[0]))
+    
+class RMSE(LossFunction):
+    def calculate(self, yhat, y):
+        """
+        Loss = sqrt(mean(square(y - yhat)))
+        """
+        return np.sqrt(np.mean((y - yhat)**2))
+
+    def backward(self, yhat, y):
+        """
+        dLoss/dyhat = dLoss/dsqrt * dsqrt/dsquare * dsquare/dmean * dmean/dyhat
+        dLoss/dyhat =  1 * (1 / (2 * sqrt(mean(square(yhat - y))))) * (2 * mean(square(yhat - y))) * (2 * (yhat - y) / n)
+        = 2 * (yhat - y) / (n * sqrt(mean(square(yhat - y))))
+        n = len(yhat)
+        """
+        dyhat = 2 * (yhat - y) / (len(yhat) * np.sqrt(np.mean((y - yhat)**2)))
+        return dyhat
