@@ -41,8 +41,9 @@ class PolynomnialRegression():
         Each bar describes the amount to which the corresponding coefficient has contributed to the output.
         The bigger the bar, the stronger the impact of the coefficient on the output.
         """
-        plt.bar(range(len(self.coefficients)), self.coefficients)
-        plt.xticks(range(len(self.coefficients)), [f"x^{i}" for i in range(len(self.coefficients))])
+        coefficients = self.coefficients.ravel()
+        plt.bar(range(len(coefficients)), coefficients)
+        plt.xticks(range(len(self.coefficients)), [f"x^{i}" for i in range(len(coefficients))])
         plt.ylabel("Coefficient")
         plt.show()
     
