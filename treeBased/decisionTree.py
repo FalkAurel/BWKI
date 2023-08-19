@@ -1,5 +1,6 @@
 import numpy as np
 
+#https://machinelearningmastery.com/implement-decision-tree-algorithm-scratch-python/
 class Node():
     def __init__(self, condition = None, index = None, informationGain =None, left = None, right = None, data = None):
         self.condition = condition
@@ -23,14 +24,14 @@ class Tree():
         """
         nFeatures = data.shape[-1]
         nSamples = len(data)
-        if depth <= self.maxDepth and nSamples >= self.minSampleSplit:
+        if depth <= self.maxDepth and nSamples >= self.minSampleSplit:#prePruning
             bestSplit = self.searchBestSplit(data, nFeatures)
             if bestSplit["informationGain"] > 0:
                 leftSubTree = self.createTree(bestSplit["leftDataset"], depth= depth + 1)
                 rightSubTree = self.createTree(bestSplit["rightDataset"], depth = depth + 1)
                 return Node(condition=bestSplit["condition"], index=bestSplit["index"], informationGain=bestSplit["informationGain"],
                             left=leftSubTree, right=rightSubTree)
-        leaf = self.evaluateY(data[:, -1])
+        leaf = self.majorityVoting(data[:, -1])
         return Node(data=leaf)     
     
     def searchBestSplit(self, data, nfeatures):
@@ -100,36 +101,101 @@ class Tree():
         entropyRightChild = self.entropy(rightChild)
         return entropyParent - (len(leftChild) / parentSize * entropyLeftChild + len(rightChild) / parentSize * entropyRightChild)
     
-    def evaluateY(self, y):
+    def majorityVoting(self, y):
         y = list(y)
         return max(y, key=y.count)
     
-    def predict(self, sample, Node):
+    def predict(self, sample, Node, postPruning=False):
         """
         Traverses the tree in a similar fashion, as you'd traverse a binary Tree.
         """
+        if postPruning != False:
+            postPruning.append(Node)
         if Node.data != None:
             return Node.data
         check = sample[Node.index]
         if check < Node.condition:
+            if postPruning:
+                return self.predict(sample, Node.left, postPruning)
             return self.predict(sample, Node.left)
         else:
+            if postPruning:
+                return self.predict(sample, Node.right, postPruning)
             return self.predict(sample, Node.right)
         
-    def evaluate(self, X, y,* , predictions=False):
+    def evaluate(self, X, y,* , Node=None, predictions=False):
         """
         Evaluating the Tree. By default it returns the percentage to which the model is able to predict correctly. Alter-
         natively you can set predictions to True to get the predictions.
         """
-        yhat = [self.predict(x, self.root) for x in X]
+        if Node == None:
+            yhat = [self.predict(x, self.root) for x in X]
+        else:
+            yhat = [self.predict(x, Node) for x in X]
         if predictions:
             return yhat
         return np.mean(yhat == y)
+    
+    def postPruning(self, X, y):
+        """
+        creating a stack to track the Nodes the sample takes to get to the solution. We reverse the stack so that the
+        first element becomes the leaf node, which makes it much easier to recursively traverse the tree. When we find a
+        unique tree that is pruneable, we do it. We store the pruned tree in possiblePrunedTrees, before checking each
+        element in possiblePrunedTrees to find the best of all of them.
+        """
+        import copy
+        possiblePrunedTrees = []
+        for index, x in enumerate(X):
+            stack = []
+            yhat = self.predict(x, self.root, postPruning=stack)
+            if yhat == y[index]:
+                temporaryStack = copy.deepcopy(list(reversed(stack)))
+                result = self.evaluatingStack(x, yhat, temporaryStack)
+                if result:
+                    possiblePrunedTrees.append(result)
+        self.root = self.searchBestTree(X, y, possiblePrunedTrees)
+        return self
+    
+    def evaluatingStack(self, X, y, copyOfStack, position = 1):
+        """
+        We check the each element of the reversed stack until we either hit our base case which is currentNode == self.root,
+        which indicates that there was no pruneable Node or we find a Node that points to the last Node(leaf) so we can savely
+        say when this Node points to the leaf Node, we can prune this Node and discard everything before this Node, as it'll be-
+        come the new leafNode.
+        """
+        if len(copyOfStack) - 1 == position:
+            return False
+        currentNode = copyOfStack[position]
+        if X[currentNode.index] < currentNode.condition and currentNode.left == copyOfStack[position - 1]:
+            currentNode.data = y
+            return copyOfStack[position:]
+        else:
+            if currentNode.right == copyOfStack[position - 1]:
+                currentNode.data = y
+                return copyOfStack[position:]
+            return self.evaluatingStack(X, y, copyOfStack, position=position+1)
+        
+    def searchBestTree(self, X, y, possibleTrees):
+        """
+        Applying a greedy search algorithm to go through all the possibleTrees and select the best one which is then returned
+        (at least it's rootNode).
+        """
+        maxAccuracy = -float("inf")
+        bestTree = None
+        for tree in possibleTrees:
+            currentAccuracy = self.evaluate(X, y, Node=tree[-1])
+            if currentAccuracy > maxAccuracy:
+                maxAccuracy = currentAccuracy
+                #print(maxAccuracy)
+                bestTree = tree[-1]
+        return bestTree
 
 if __name__ == "__main__":
+    np.random.seed(100)
     X = np.random.randn(50, 9)
     y = np.zeros(50)
     y[(X[:, 0] + X[:, 1] > 1)] = 1
     y[(X[:, 0] + X[:, 1] < -1)] = 2
-    tree = Tree(minSampleSplit=3, maxDepth=X.shape[-1]*4, criterion="entropy")
-    print("Accuracy on training data:", tree.fit(X, y).evaluate(X, y))
+    t = Tree(minSampleSplit=3, maxDepth=X.shape[-1]*4, criterion="gini")
+    print("Accuracy on training data without post pruning:", t.fit(X, y).evaluate(X, y))
+    print("Accuracy on training data with post pruning:", t.postPruning(X, y).evaluate(X,y))
