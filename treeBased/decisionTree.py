@@ -173,15 +173,10 @@ class Tree():
         performance = float("inf")
         while index < len(copyOfStack) and performance >= baseLinePerformance:
             result = self.depthFirstSearch(copyOfStack[index])
-            #print(result)
             copyOfStack[index].data = self.majorityVoting(result)
             copyOfStack[index].left, copyOfStack[index].right = None, None
             accuracy = self.evaluate(X, y, Node=copyOfStack[-1])
-            #print(performance, accuracy)
             performance = accuracy
-            if performance >= baseLinePerformance:
-                print(True)
-            #print(f"Updated performance {performance}")
             index += 1
         return copyOfStack
             
@@ -199,15 +194,3 @@ class Tree():
                 print(maxAccuracy)
                 bestTree = tree[-1]
         return bestTree
-
-if __name__ == "__main__":
-    np.random.seed(100)
-    X = np.random.randn(100, 9)
-    y = np.zeros(100)
-    y[(X[:, 0] + X[:, 1] > 1)] = 1
-    y[(X[:, 0] + X[:, 1] < -1)] = 2
-    index = int(len(X) * (2/3))
-    trainX, trainY = X[:index], y[:index]
-    t = Tree(minSampleSplit=3, maxDepth=X.shape[-1]*4, criterion="gini")
-    print("Accuracy on training data without post pruning:", t.fit(trainX, trainY).evaluate(trainX, trainY))
-    print("Accuracy on training data with post pruning:", t.postPruning(trainX, trainY).evaluate(trainX,trainY))
