@@ -145,36 +145,46 @@ class Tree():
         """
         import copy
         possiblePrunedTrees = []
+        unPrunedPerformance = self.evaluate(X, y)
         for index, x in enumerate(X):
             stack = []
             yhat = self.predict(x, self.root, postPruning=stack)
             if yhat == y[index]:
                 temporaryStack = copy.deepcopy(list(reversed(stack)))
-                result = self.evaluatingStack(x, yhat, temporaryStack)
+                result = self.evaluatingStack(X, y, temporaryStack, unPrunedPerformance)
                 if result:
                     possiblePrunedTrees.append(result)
         self.root = self.searchBestTree(X, y, possiblePrunedTrees)
         return self
-    
-    def evaluatingStack(self, X, y, copyOfStack, position = 1):
-        """
-        We check the each element of the reversed stack until we either hit our base case which is currentNode == self.root,
-        which indicates that there was no pruneable Node or we find a Node that points to the last Node(leaf) so we can savely
-        say when this Node points to the leaf Node, we can prune this Node and discard everything before this Node, as it'll be-
-        come the new leafNode.
-        """
-        if len(copyOfStack) - 1 == position:
-            return False
-        currentNode = copyOfStack[position]
-        if X[currentNode.index] < currentNode.condition and currentNode.left == copyOfStack[position - 1]:
-            currentNode.data = y
-            return copyOfStack[position:]
-        else:
-            if currentNode.right == copyOfStack[position - 1]:
-                currentNode.data = y
-                return copyOfStack[position:]
-            return self.evaluatingStack(X, y, copyOfStack, position=position+1)
         
+    def depthFirstSearch(self, Node, stack = [], data = []):
+        if Node.data:
+            data.append(Node.data)
+        if Node.left:
+            stack.append(Node.left)
+        if Node.right:
+            stack.append(Node.right)
+        if stack:
+            return self.depthFirstSearch(stack.pop(), stack, data)
+        return data
+                
+    def evaluatingStack(self, X, y, copyOfStack, baseLinePerformance):
+        index = 1
+        performance = float("inf")
+        while index < len(copyOfStack) and performance >= baseLinePerformance:
+            result = self.depthFirstSearch(copyOfStack[index])
+            #print(result)
+            copyOfStack[index].data = self.majorityVoting(result)
+            copyOfStack[index].left, copyOfStack[index].right = None, None
+            accuracy = self.evaluate(X, y, Node=copyOfStack[-1])
+            #print(performance, accuracy)
+            performance = accuracy
+            if performance >= baseLinePerformance:
+                print(True)
+            #print(f"Updated performance {performance}")
+            index += 1
+        return copyOfStack
+            
     def searchBestTree(self, X, y, possibleTrees):
         """
         Applying a greedy search algorithm to go through all the possibleTrees and select the best one which is then returned
@@ -186,16 +196,18 @@ class Tree():
             currentAccuracy = self.evaluate(X, y, Node=tree[-1])
             if currentAccuracy > maxAccuracy:
                 maxAccuracy = currentAccuracy
-                #print(maxAccuracy)
+                print(maxAccuracy)
                 bestTree = tree[-1]
         return bestTree
 
 if __name__ == "__main__":
     np.random.seed(100)
-    X = np.random.randn(50, 9)
-    y = np.zeros(50)
+    X = np.random.randn(100, 9)
+    y = np.zeros(100)
     y[(X[:, 0] + X[:, 1] > 1)] = 1
     y[(X[:, 0] + X[:, 1] < -1)] = 2
+    index = int(len(X) * (2/3))
+    trainX, trainY = X[:index], y[:index]
     t = Tree(minSampleSplit=3, maxDepth=X.shape[-1]*4, criterion="gini")
-    print("Accuracy on training data without post pruning:", t.fit(X, y).evaluate(X, y))
-    print("Accuracy on training data with post pruning:", t.postPruning(X, y).evaluate(X,y))
+    print("Accuracy on training data without post pruning:", t.fit(trainX, trainY).evaluate(trainX, trainY))
+    print("Accuracy on training data with post pruning:", t.postPruning(trainX, trainY).evaluate(trainX,trainY))
