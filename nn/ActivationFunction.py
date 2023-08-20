@@ -2,7 +2,6 @@ import numpy as np
 from abc import ABC, abstractmethod
     
 class ActivationFunction(ABC):
-    
     @abstractmethod
     def forward(self, inputs):
         pass
@@ -12,7 +11,6 @@ class ActivationFunction(ABC):
         pass
     
 class ReLU(ActivationFunction):
-    
     def forward(self, inputs):
         self._input = inputs
         return np.maximum(0, inputs)
@@ -21,9 +19,31 @@ class ReLU(ActivationFunction):
         dInputs = gradient.copy()
         dInputs[self._input <= 0] = 0
         return dInputs
+
+class LReLU(ActivationFunction):
+    def __init__(self, alpha = 1e-3):
+        self.alpha = alpha
+        
+    def forward(self, inputs):
+        self._input = inputs
+        return np.maximum(inputs * self.alpha, inputs)
     
+    def backward(self, gradient):
+        return np.where(self._input < 0, self.alpha, 1) * gradient
+
+class ALReLU(ActivationFunction):
+    #https://arxiv.org/abs/2012.07564
+    def __init__(self, alpha=1e-3):
+        self.alpha = alpha
+    
+    def forward(self, inputs):
+        self._input = inputs
+        return np.maximum(inputs * -self.alpha, inputs)
+    
+    def backward(self, gradient):
+        return np.where(self._input < 0, -self.alpha, 1) * gradient
+
 class tanh(ActivationFunction):
-    
     def forward(self, inputs):
         self._input = np.tanh(inputs)
         return self._inputs
@@ -59,9 +79,12 @@ class Softmax(ActivationFunction):
         return dInputs
 
 class Sigmoid(ActivationFunction):
-    
     def forward(self, inputs):
         self.output = 1 / (1 + np.exp(-inputs))
+        return self.output
+    
+    def backward(self, gradient):
+        return gradient * (1 - self.output) * self.output
         return self.output
     
     def backward(self, gradient):
