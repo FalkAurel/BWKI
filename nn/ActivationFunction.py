@@ -85,7 +85,3 @@ class Sigmoid(ActivationFunction):
     
     def backward(self, gradient):
         return gradient * (1 - self.output) * self.output
-        return self.output
-    
-    def backward(self, gradient):
-        return gradient * (1 - self.output) * self.output
