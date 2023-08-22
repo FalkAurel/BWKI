@@ -13,12 +13,12 @@ class Tree():
     def __init__(self, minSampleSplit, maxDepth, *, criterion="entropy"):
         self.minSampleSplit, self.maxDepth, self.criterion = minSampleSplit, maxDepth, criterion
         
-    def fit(self, X, y):
+    def fit(self, X, y, *, mode = "classification"):
         data = np.hstack((X, y.reshape(len(X), -1)))
-        self.root = self.createTree(data)
+        self.root = self.createTree(data, mode = mode)
         return self
     
-    def createTree(self, data, *, depth=0):
+    def createTree(self, data, *, mode, depth=0):
         """
         recursively building a tree. Pretty similar to a binary Tree.
         """
@@ -27,10 +27,12 @@ class Tree():
         if depth <= self.maxDepth and nSamples >= self.minSampleSplit:#prePruning
             bestSplit = self.searchBestSplit(data, nFeatures)
             if bestSplit["informationGain"] > 0:
-                leftSubTree = self.createTree(bestSplit["leftDataset"], depth= depth + 1)
-                rightSubTree = self.createTree(bestSplit["rightDataset"], depth = depth + 1)
+                leftSubTree = self.createTree(bestSplit["leftDataset"], mode=mode, depth= depth + 1)
+                rightSubTree = self.createTree(bestSplit["rightDataset"], mode=mode, depth = depth + 1)
                 return Node(condition=bestSplit["condition"], index=bestSplit["index"], informationGain=bestSplit["informationGain"],
                             left=leftSubTree, right=rightSubTree)
+        if mode == "regression":
+            return Node(data=np.mean(data[:, -1]))
         leaf = self.majorityVoting(data[:, -1])
         return Node(data=leaf)     
     
@@ -123,7 +125,7 @@ class Tree():
                 return self.predict(sample, Node.right, postPruning)
             return self.predict(sample, Node.right)
         
-    def evaluate(self, X, y,* , Node=None, predictions=False):
+    def evaluate(self, X, y,* , Node=None, predictions=False, mode = "classification", tolerance = 0.05):
         """
         Evaluating the Tree. By default it returns the percentage to which the model is able to predict correctly. Alter-
         natively you can set predictions to True to get the predictions.
@@ -134,9 +136,11 @@ class Tree():
             yhat = [self.predict(x, Node) for x in X]
         if predictions:
             return yhat
+        if mode == "regression":
+            return np.mean(np.where(np.logical_or(yhat < y * (1 + tolerance), yhat > y * (1 - tolerance)), 1, 0))
         return np.mean(yhat == y)
     
-    def postPruning(self, X, y):
+    def postPruning(self, X, y, *, mode = "classification"):
         """
         creating a stack to track the Nodes the sample takes to get to the solution. We reverse the stack so that the
         first element becomes the leaf node, which makes it much easier to recursively traverse the tree. When we find a
@@ -151,10 +155,10 @@ class Tree():
             yhat = self.predict(x, self.root, postPruning=stack)
             if yhat == y[index]:
                 temporaryStack = copy.deepcopy(list(reversed(stack)))
-                result = self.evaluatingStack(X, y, temporaryStack, unPrunedPerformance)
+                result = self.evaluatingStack(X, y, temporaryStack, unPrunedPerformance, mode)
                 if result:
                     possiblePrunedTrees.append(result)
-        self.root = self.searchBestTree(X, y, possiblePrunedTrees)
+        self.root = self.searchBestTree(X, y, possiblePrunedTrees, mode)
         return self
         
     def depthFirstSearch(self, Node, stack = [], data = []):
@@ -168,19 +172,27 @@ class Tree():
             return self.depthFirstSearch(stack.pop(), stack, data)
         return data
                 
-    def evaluatingStack(self, X, y, copyOfStack, baseLinePerformance):
+    def evaluatingStack(self, X, y, copyOfStack, baseLinePerformance, mode):
+        """
+        Going through the stack and discarding everything that comes after a given decisionNode, by turning it into
+        a leaf node. The label is assigned by searching through the all the leafNodes that come after the current one
+        and taking the majority of the present labels as current label.
+        """
         index = 1
         performance = float("inf")
         while index < len(copyOfStack) and performance >= baseLinePerformance:
             result = self.depthFirstSearch(copyOfStack[index])
-            copyOfStack[index].data = self.majorityVoting(result)
+            if mode == "regression":
+                copyOfStack[index].data = np.mean(result)
+            else:
+                copyOfStack[index].data = self.majorityVoting(result)
             copyOfStack[index].left, copyOfStack[index].right = None, None
             accuracy = self.evaluate(X, y, Node=copyOfStack[-1])
             performance = accuracy
             index += 1
         return copyOfStack
             
-    def searchBestTree(self, X, y, possibleTrees):
+    def searchBestTree(self, X, y, possibleTrees, mode):
         """
         Applying a greedy search algorithm to go through all the possibleTrees and select the best one which is then returned
         (at least it's rootNode).
@@ -188,7 +200,7 @@ class Tree():
         maxAccuracy = -float("inf")
         bestTree = None
         for tree in possibleTrees:
-            currentAccuracy = self.evaluate(X, y, Node=tree[-1])
+            currentAccuracy = self.evaluate(X, y, Node=tree[-1], mode=mode)
             if currentAccuracy > maxAccuracy:
                 maxAccuracy = currentAccuracy
                 print(maxAccuracy)
