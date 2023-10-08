@@ -1,41 +1,40 @@
 import numpy as np
 
 class PrincipalComponentAnalysis():
-    
-    def fit(self, data, *, nComponents=1):
-        """
-        d should never be larger than the dimensions present in the dataset.
-        Takes the dataset and shifts it so that it is mean centered.
-        """
+    def fit(self, data, nComponents):
         self.mean = data.mean(axis=0, keepdims=True)
         self.meanCenteredData = data - self.mean
-        eigenValue, self.eigenVector = np.linalg.eig(self.covarianceMatrix())
-        self.index = self.findBestEigenVector(eigenValue, nComponents)
-        return self
-        
-    def covarianceMatrix(self):
+        covMatrix = self.covarianceMatrix(self.meanCenteredData)
+        self.eigenValues, eigenVectors = np.linalg.eig(covMatrix)
+        self.eigenVectors = eigenVectors[:, :nComponents]
+    
+    def covarianceMatrix(self, data):
         """
         Calculates the covariance matrix. Calculates the variance along the first dimension, assuming that each
         column contains all the corresponding x values. The covariance is the summed product along the last
         dimension in the dataset. The covariance matrix contains for all indices where j == i the variance and
         for all j != i the corresponding covariance.
         """
-        return np.dot(self.meanCenteredData.T, self.meanCenteredData) / (len(self.meanCenteredData) - 1)
+        return data.T.dot(data) / (len(data) - 1)
     
-    def findBestEigenVector(self, l, dimensions):
-        output, currentBest = [], -float("inf")
-        for _ in range(dimensions):
-            index = np.argmax(l)
-            l[index] = -np.inf
-            output.append(index)
-        return output
-    
+    @property
+    def explainedVariance(self):
+        """
+        Returns an array which lists all the components and the extend to which they can explain the variance
+        found in the dataset. Therefore the sum of all the components should equal 1, hence no information is
+        lost.
+        """
+        return self.eigenValues / self.eigenValues.sum()
+        
     def project(self):
-        return np.dot(self.meanCenteredData, self.eigenVector[:, self.index])
+        """
+        Projects the data into lower-dimensional-space using the principal Components as new axes, it's essentially
+        a linear Transformation.
+        """
+        return self.meanCenteredData.dot(self.eigenVectors)
     
     def inverseTransform(self, data):
         """
-        To obtain the untwisted version of the data just take the eigenVector matrix and take the transpose of it
-        and take the dot product of it with the data you wish to see in original space.
+        Reverses the linear Transformation and "wraps" the data back into orginal space.
         """
-        return np.dot(data, self.eigenVector[:, self.index].T) + self.mean
+        return data.dot(self.eigenVectors.T) + self.mean
