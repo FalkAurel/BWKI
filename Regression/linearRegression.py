@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-class simpleLineareRegression():
+class simpleLinearRegression():
     def fit(self, X, y):
         """
         Solving for the beta0 and beta1 coefficients. beta1 is calculated using the formula:
@@ -27,7 +27,9 @@ class simpleLineareRegression():
         yhat = self.beta0 + self.beta1 * X
         if visualize:
             return yhat
-        return np.mean(np.where(np.logical_or(yhat * (1 + tolerance) >= y, yhat * (1 - tolerance) <= y), 1, 0)), np.sqrt(np.mean(y - yhat)**2)
+        absoluteDifference, allowedDifference = np.abs(y - yhat), np.abs(y * (1 + tolerance) - y)
+        return np.mean(absoluteDifference <= allowedDifference), np.sqrt(np.mean((y - yhat)**2))
+
     
     @property
     def getCoefficients(self):
@@ -66,7 +68,17 @@ class MultipleLinearRegression():
         yhat = np.hstack((np.ones((X.shape[0], 1)), X)) @ self.coefficients
         if visualize:
             return yhat
-        return np.mean(np.where(np.logical_or(yhat * (1 + tolerance) >= y, yhat * (1 - tolerance) <= y), 1, 0)), np.sqrt(np.mean((y - yhat) ** 2))
+        absoluteDifference, allowedDifference = np.abs(y - yhat), np.abs(y - y * (1 + tolerance))
+        return np.mean(absoluteDifference <= allowedDifference), np.sqrt(np.mean((y - yhat) ** 2))
+    
+    def samplingData(self, X, y, *, threshold = 0.7):
+        """
+        using the coefficent of correlation we'll eliminate all dimensions in the data which don't show a high correlation
+        with the target. The threshold parameter let's you finetune the elimination process.
+        """
+        manipulatedX, manipulatedY = X - X.mean(axis = -1), y -y.mean() 
+        R = np.sum(manipulatedX * manipulatedY) / (np.sum(manipulatedX**2)**0.5 * np.sum(manipulatedY**2)**0.5)
+        return np.delete(X, np.where(R > threshold)[0], axis=-1)
     
     @property
     def getCoefficients(self):
