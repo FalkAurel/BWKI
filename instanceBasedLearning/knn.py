@@ -28,7 +28,7 @@ class KNN():
         if predictions:
             return yhat
         if mode == "regression":
-            return np.mean(np.where(np.logical_or(yhat * (1 + tolerance) > y, yhat * (1 - tolerance) < y), 1, 0))
+            return np.mean(np.abs(y - yhat) <= np.abs(y - y * (1 + tolerance)))
         return np.mean(yhat == y)
         
     def euclideanDistanceToTargetPoint(self, target):
