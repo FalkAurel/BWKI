@@ -30,7 +30,8 @@ class PolynomnialRegression():
         yhat = inputMatrix @ self.coefficients
         if visualize:
             return yhat
-        return np.mean(np.where(np.logical_or(yhat*(1 + tolerance) >= y, yhat*(1 - tolerance) <= y), 1, 0)), np.sqrt(np.mean(y - yhat)**2)
+        absoluteDifference, allowedDifference = np.abs(y - yhat), np.abs(y - y * (1 + tolerance))
+        return np.mean(absoluteDifference <= allowedDifference), np.sqrt(np.mean(y - yhat)**2)
     
     @property
     def getCoefficients(self):
