@@ -2,9 +2,11 @@ from .convolution import Convolution
 from .fourierFeatureMapping import fourierFeatureMapping
 from .maxPooling import MaxPooling
 from .meanPooling import MeanPooling
+from .workingWithImages import convertingBGR2RGB
 from .workingWithImages import RGBToGrayScale
 from .workingWithImages import extractCoordinates
 from .workingWithImages import extractRGB
 from .workingWithImages import convertingToBlackAndWhite
 from .workingWithImages import gaussianFilter1D
 from .workingWithImages import gaussianFilter2D
+from .workingWithImages import gaussianFilter3D
