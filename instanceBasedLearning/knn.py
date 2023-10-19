@@ -41,16 +41,10 @@ class KNN():
     
     def findNearestNeighbours(self, distance):
         """
-        Using a greedy search algorithm to find the k nearest neighbours.
+        Returns the k nearest neighbours with their distance to the target.
         """
-        neighbours, distanceToTarget = [], []
-        distance = distance.copy()
-        for i in range(self.k):
-            position = distance.argmin()
-            distanceToTarget.append(distance[position])
-            neighbours.append(position)
-            distance[position] = np.inf
-        return neighbours, distanceToTarget
+        neighbours = np.argsort(distance)[:self.k]
+        return neighbours, distance[neighbours]
     
     def majorityVoting(self, y, weight):
         inverseWeight = 1 / (np.array(weight) + 1e-9)
